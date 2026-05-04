@@ -24,9 +24,9 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
   }
 
   // 2) Recalculate total price based on actual product prices
-  let totalPrice = 0;
+  let totalPrice = 0; //80 + 200 = 280 
 
-  for (const item of cart.cartItems) {
+  for (const item of cart.cartItems) {  //3 prducts glass boll 
     const product = await Product.findById(item.product);
     if (!product) {
       return next(new ApiError(`Product with id ${item.product} not found`, 404));
@@ -42,9 +42,7 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
   await cart.save();
 
   // 3) Get order price depend on cart price "Check if coupon apply"
-  const cartPrice = cart.totalPriceAfterDiscount
-    ? cart.totalPriceAfterDiscount
-    : cart.totalCartPrice;
+  const cartPrice = cart.totalPriceAfterDiscount ? cart.totalPriceAfterDiscount : cart.totalCartPrice;
 
   const totalOrderPrice = cartPrice + taxPrice + shippingPrice;
 
@@ -73,6 +71,8 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
   res.status(201).json({ status: 'success', data: order });
 });
 
+
+//  ----------------------------------------------Shehata stoped------------------------------------------------------------
 exports.filterOrderForLoggedUser = asyncHandler(async (req, res, next) => {
   if (req.user.role === 'user') req.filterObj = { user: req.user._id };
   next();

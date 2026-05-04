@@ -1,4 +1,4 @@
-const asyncHandler = require('express-async-handler');
+const asyncHandler = require('express-async-handler'); //بتمسك الخطأ
 
 const User = require('../models/userModel');
 
@@ -15,7 +15,7 @@ exports.addProductToWishlist = asyncHandler(async (req, res, next) => {
     { new: true }
   );
 
-  res.status(200).json({
+  res.status(200).json({ 
     status: 'success',
     message: 'Product added successfully to your wishlist.',
     data: user.wishlist,

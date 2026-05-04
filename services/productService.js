@@ -1,53 +1,70 @@
 const asyncHandler = require("express-async-handler");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
+const cloudinary = require("../config/cloudinary");
 
 const { uploadMixOfImages } = require("../middlewares/uploadImageMiddleware");
 const factory = require("./handlersFactory");
 const Product = require("../models/productModel");
 
+// function نرفع بيها buffer
+const uploadToCloudinary = (buffer, name) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "products",
+        public_id: name,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
+    stream.end(buffer);
+  });
+};
+
 exports.uploadProductImages = uploadMixOfImages([
-  {
-    name: "imageCover",
-    maxCount: 1,
-  },
-  {
-    name: "images",
-    maxCount: 4,
-  },
+  { name: "imageCover", maxCount: 1 },
+  { name: "images", maxCount: 4 },
 ]);
 
 exports.resizeProductImages = asyncHandler(async (req, res, next) => {
-  // console.log(req.files);
-  //1- Image processing for imageCover
+  // 1️⃣ imageCover
   if (req.files.imageCover) {
-    const imageCoverFileName = `product-${uuidv4()}-${Date.now()}-cover.png`;
+    const imageCoverName = `product-${uuidv4()}-${Date.now()}-cover`;
 
-    await sharp(req.files.imageCover[0].buffer)
+    const buffer = await sharp(req.files.imageCover[0].buffer)
       .toFormat("png")
       .png({ quality: 95 })
-      .toFile(`uploads/products/${imageCoverFileName}`);
+      .toBuffer(); // 🔥 بدل toFile
 
-    // Save image into our db
-    req.body.imageCover = imageCoverFileName;
+    const result = await uploadToCloudinary(buffer, imageCoverName);
+
+    req.body.imageCover = result.secure_url;
   }
-  //2- Image processing for images
+
+  // 2️⃣ images
   if (req.files.images) {
     req.body.images = [];
+
     await Promise.all(
       req.files.images.map(async (img, index) => {
-        const imageName = `product-${uuidv4()}-${Date.now()}-${index + 1}.png`;
+        const imageName = `product-${uuidv4()}-${Date.now()}-${index + 1}`;
 
-        await sharp(img.buffer)
+        const buffer = await sharp(img.buffer)
           .toFormat("png")
           .png({ quality: 95 })
-          .toFile(`uploads/products/${imageName}`);
+          .toBuffer(); // 🔥 بدل toFile
 
-        // Save image into our db
-        req.body.images.push(imageName);
+        const result = await uploadToCloudinary(buffer, imageName);
+
+        req.body.images.push(result.secure_url);
       })
     );
   }
+
   next();
 });
 
